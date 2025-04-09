@@ -66,7 +66,7 @@ Esta integração permite que sistemas externos consultem informações de pacie
 
 **Exemplo de Tratamento da Resposta**
 
-```json
+```python
 id_mapping = [
         ("2.16.840.1.113883.13.236", "asOtherIDs", "cnss"),
         ("2.16.840.1.113883.13.237", "asOtherIDs", "cpf"),
