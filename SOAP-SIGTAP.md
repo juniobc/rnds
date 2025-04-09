@@ -168,7 +168,13 @@ xmlns:pag="[http://servicos.saude.gov.br/wsdl/mensageria/v1/paginacao](http://se
     </proc:requestDetalharProcedimento>
   </soap:Body>
 </soap:Envelope>
-Exemplo de Retorno (nosso código):return {
+
+```
+
+**Exemplo de Retorno:**
+
+```json
+return {
             "codigo_procedimento": codigo,
             "nome_procedimento": nome,
             "forma_organizacao": {
@@ -228,3 +234,4 @@ Exemplo de Retorno (nosso código):return {
             "habilitacoes_vinculadas": habilitacoes_vinculadas,
             "regras_condicionadas_vinculadas": regras_condicionadas_vinculadas
         }
+```

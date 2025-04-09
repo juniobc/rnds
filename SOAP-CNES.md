@@ -41,9 +41,11 @@ Esta integração permite que sistemas terceiros consultem informações detalha
         </cnes:requestConsultarEstabelecimentoSaude>
     </soap:Body>
 </soap:Envelope>
+```
 
-Exemplo de Retorno (nosso código):
+**Exemplo de Retorno:**
 
+```json
 Returns:
     dict:
         - Se sucesso: return {
@@ -106,3 +108,4 @@ Returns:
             "habilitacoes_vinculadas": habilitacoes_vinculadas,
             "regras_condicionadas_vinculadas": regras_condicionadas_vinculadas
         }
+```
