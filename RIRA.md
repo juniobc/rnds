@@ -25,6 +25,111 @@ Esta integração permite o envio de informações de regulação assistencial d
 * **Operação:** Envio de dados de Regulação Assistencial
 
 
+**FHIR Service**
+
+```python
+from .schemas import PatientRequestSchema, PatientResponseSchema
+from db.conectaBanco import ConectaBanco
+from fhir.resources.patient import Patient
+from fhir.resources.humanname import HumanName
+from fhir.resources.contactpoint import ContactPoint
+from datetime import datetime
+
+class FHIRService:
+    def create_patient(self, request: dict, db: ConectaBanco):
+        schema = PatientRequestSchema()
+        
+        # Validar e desserializar a solicitação
+        request_data = schema.load(request)
+        
+        # Criar a entrada do paciente na tabela Patient usando o schema validado
+        fhir_patient = Patient(
+            resourceType=request_data["resourceType"],
+            id=request_data.get("id"),
+            identifier=request_data.get("identifier"),
+            active=request_data.get("active"),
+            name=[HumanName(**name) for name in request_data.get("name", [])],
+            telecom=[ContactPoint(**telecom) for telecom in request_data.get("telecom", [])],
+            gender=request_data.get("gender"),
+            birthDate=request_data.get("birthDate"),
+            deceasedBoolean=request_data.get("deceasedBoolean"),
+            address=request_data.get("address"),
+            contact=request_data.get("contact"),
+            managingOrganization=request_data.get("managingOrganization")
+        )
+
+        # Converter o paciente FHIR para um dicionário e salvar no banco de dados
+        patient_data = fhir_patient.dict()
+        patient_id = db.criaRegistro("Patient", list(patient_data.keys()), list(patient_data.values()))
+
+        # Lógica para salvar os nomes do paciente
+        for name in request_data.get("name", []):
+            name_data = {
+                "patient_id": patient_id,
+                "use": name.get("use"),
+                "family": name.get("family"),
+                "given": name.get("given")
+            }
+            db.criaRegistro("Name", list(name_data.keys()), list(name_data.values()))
+
+        # Lógica para salvar os meios de telecomunicação
+        for telecom in request_data.get("telecom", []):
+            telecom_data = {
+                "patient_id": patient_id,
+                "system": telecom.get("system"),
+                "value": telecom.get("value"),
+                "use": telecom.get("use"),
+                "rank": telecom.get("rank"),
+                "period_end": telecom.get('period', {}).get('end') if telecom.get('period') else None
+            }
+            db.criaRegistro("Telecom", list(telecom_data.keys()), list(telecom_data.values()))
+
+        return patient_data
+
+    def get_patient(self, patient_id: str, db: ConectaBanco):
+        # Recuperar dados do paciente e formatar a resposta
+        query = f"SELECT * FROM Patient WHERE id='{patient_id}'"
+        patient_data = db.consulta(query)
+        if patient_data:
+            # Recuperar e adicionar nomes
+            query_names = f"SELECT * FROM Name WHERE patient_id='{patient_id}'"
+            names = db.consulta(query_names)
+            patient_data['name'] = names
+
+            # Recuperar e adicionar telecomunicações
+            query_telecom = f"SELECT * FROM Telecom WHERE patient_id='{patient_id}'"
+            telecoms = db.consulta(query_telecom)
+            patient_data['telecom'] = telecoms
+
+            # Criar um objeto FHIR Patient a partir dos dados recuperados
+            fhir_patient = Patient(**patient_data)
+            schema = PatientResponseSchema()
+            return schema.dump(fhir_patient.dict())
+        return None
+
+    def convert_to_fhir_patient(self, data):
+        patient = Patient(
+            id=data["id"],
+            name=[HumanName(family=data["last_name"], given=[data["first_name"]])],
+            gender=data["gender"],
+            birthDate=datetime.strptime(data["birth_date"], "%Y-%m-%d").date().isoformat()
+        )
+        return patient.json()
+
+# Exemplo de uso:
+fhir = FHIRService()
+# Supondo que data seja um dicionário com informações do paciente
+data = {
+    "id": "12345",
+    "first_name": "John",
+    "last_name": "Doe",
+    "gender": "male",
+    "birth_date": "1980-01-01"
+}
+fhir_patient = fhir.convert_to_fhir_patient(data)
+print(fhir_patient)
+```
+
 **Exemplo de Tratamento da Resposta (Python com FHIR.resource):**
 
 ```python
